@@ -194,7 +194,7 @@ public class entry
     }
 
     // decryptes and decodes the message
-    public static BigInteger rsa_decrypt(BigInteger encrypted_msg, rsa_private_key privk)
+    public static String rsa_decrypt(BigInteger encrypted_msg, rsa_private_key privk)
     {
         var decrypted = encrypted_msg.modPow(privk.d, privk.N);
         return decode_msg(decrypted);
