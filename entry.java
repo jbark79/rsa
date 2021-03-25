@@ -197,7 +197,7 @@ public class entry
     public static BigInteger rsa_decrypt(BigInteger encrypted_msg, rsa_private_key privk)
     {
         var decrypted = encrypted_msg.modPow(privk.d, privk.N);
-        return decrypted;
+        return decode_msg(decrypted);
     }
 
     public static void main(String[] args)
@@ -209,8 +209,7 @@ public class entry
         var keypair = construct_rsa_keypair(p,q);
 
         var encrypted = new BigInteger("33924201066280476046214724300018026113030797390533451217471465178938195448614240023403361319279200116541015428310732515693821362871853665256838067102914524287136546661448649117887474760902176");
-
-        var decrypted = rsa_decrypt(encrypted, keypair.priv);
-        System.out.print(decode_msg(decrypted));
+        
+        System.out.print(rsa_decrypt(encrypted,keypair.priv));
     }
 }
