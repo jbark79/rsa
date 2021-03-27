@@ -146,16 +146,16 @@ public class entry
         return new rsa_key_pair(public_key, private_key);
     }
 
-    // A->1, B->2,...,Z->26
+    // A->0, B->1,...,Z->25
     public static int char_to_value(char c)
     {
-        return (int)c-64;
+        return (int)c-65;
     }
 
     // inverse of char_to_value
     public static char value_to_char(int c)
     {
-        return (char)(c+64);
+        return (char)(c+65);
     }
 
     public static BigInteger encode_msg(String msg)
@@ -178,7 +178,7 @@ public class entry
 
         while (encoded_msg.compareTo(BigInteger.valueOf(0)) != 0)
         {
-            // intValue should always return some integer n, so that 1 <= n <= 26
+            // intValue should always return some integer n, so that 0 <= n <= 25
             msg = msg.concat(String.valueOf(value_to_char(encoded_msg.mod(base).intValue())));
             encoded_msg = encoded_msg.divide(base);
         }
