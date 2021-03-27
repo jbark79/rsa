@@ -134,13 +134,13 @@ def rsa_decrypt(encrypted, rsa_private_key):
     return x
 
 def char_to_num(char):
-    return ord(char)-64
+    return ord(char)-65
     
     # ascii
     #return ord(char)
 
 def num_to_char(num):
-    return chr(num+64)
+    return chr(num+65)
 
     # ascii
     #return chr(num)
