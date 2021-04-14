@@ -1,4 +1,5 @@
 import java.math.BigInteger;
+import java.util.Random;
 
 class linear_combination
 {
@@ -48,18 +49,18 @@ class rsa_key_pair
     public rsa_private_key priv;
 }
 
-public class entry
+public class rsa
 {
     public static BigInteger gcd(BigInteger a, BigInteger b)
     {
         if (a.compareTo(b) < 0)
         {
-            var tmp = a;
+            BigInteger tmp = a;
             a=b;
             b=tmp;
         }
 
-        var r = a.mod(b);
+        BigInteger r = a.mod(b);
         
         while (r.compareTo(new BigInteger("0")) != 0)
         {
@@ -74,19 +75,20 @@ public class entry
     // such that s*a + t*b = gcd(a,b)
     public static linear_combination extended_gcd(BigInteger a, BigInteger b)
     {
-        var old_r = a;
-        var r=b;
+        BigInteger old_r = a;
+        BigInteger r=b;
 
-        var old_s = new BigInteger("1");
-        var s = new BigInteger("0");
+        BigInteger old_s = new BigInteger("1");
+        BigInteger s = new BigInteger("0");
 
-        var old_t = new BigInteger("0");
-        var t = new BigInteger("1");
+        BigInteger old_t = new BigInteger("0");
+        BigInteger t = new BigInteger("1");
 
         while (r.compareTo(new BigInteger("0")) != 0)
         {
-            var q = old_r.divide(r); 
-            var tmp = r;
+            BigInteger q = old_r.divide(r); 
+
+            BigInteger tmp = r;
             r = old_r.subtract(q.multiply(tmp));
             old_r = tmp;
 
@@ -102,21 +104,56 @@ public class entry
         return new linear_combination(old_s, old_t);
     }
 
+    // erweiterter euklidischer algorithmus nach vorgabe
+    public static BigInteger RSA_private(BigInteger phiN, BigInteger e)
+    {
+        BigInteger a = phiN;
+        BigInteger b=e;
+
+        BigInteger u = new BigInteger("1");
+        BigInteger t = new BigInteger("1");
+
+        BigInteger v = new BigInteger("0");
+        BigInteger s = new BigInteger("0");
+
+        while (b.compareTo(new BigInteger("0")) > 0)
+        {
+            BigInteger q = a.divide(b); 
+
+            BigInteger r = a.mod(b);
+            a = b;
+            b = r;
+
+            r = u.subtract(q.multiply(s));
+            u = s;
+            s = r;
+
+            r = v.subtract(q.multiply(t));
+            v = t;
+            t=r;
+        }
+
+        if (v.compareTo(new BigInteger("0")) < 0) 
+            v = v.add(phiN);
+
+        return v;
+    }
+
     public static rsa_key_pair construct_rsa_keypair(BigInteger q, BigInteger p)
     {
-        var N = p.multiply(q);
-        var tmp1 = q.subtract(new BigInteger("1"));
-        var tmp2 = p.subtract(new BigInteger("1"));
+        BigInteger N = p.multiply(q);
+        BigInteger tmp1 = q.subtract(new BigInteger("1"));
+        BigInteger tmp2 = p.subtract(new BigInteger("1"));
 
-        var phiN = tmp1.multiply(tmp2);
+        BigInteger phiN = tmp1.multiply(tmp2);
 
-        var e = new BigInteger("2");
+        BigInteger e = new BigInteger("2");
 
         // find e such that e \in P and gcd(e,phiN)=1
         while (true)
         {
-            var is_prime = true;
-            for (var i = new BigInteger("2"); i.compareTo(e.sqrt()) < 0; i.add(new BigInteger("1")))
+            boolean is_prime = true;
+            for (BigInteger i = new BigInteger("2"); i.compareTo(e.sqrt()) < 0; i = i.add(new BigInteger("1")))
             {
                 if (e.mod(i).compareTo(new BigInteger("0"))==0)
                 {
@@ -129,20 +166,20 @@ public class entry
 
             e = e.add(new BigInteger("1"));
         }
-
-        var public_key = new rsa_public_key(N, e);
+        rsa_public_key public_key = new rsa_public_key(N, e);
         
         // now for the private key we use the extended euclid alg
-        // such that we have 1 = s*phiN - d*e, where d is a positive integer
-        
-        var linear_comb = extended_gcd(phiN, e);
-        var d = linear_comb.t;
+        // such that we have 1 = s*phiN + d*e
+        //linear_combination linear_comb = extended_gcd(phiN, e);
+        //BigInteger d = linear_comb.t;
 
-        // d must be positive
-        if (d.compareTo(new BigInteger("0")) < 0)
-            d = d.add(phiN);
-        var private_key = new rsa_private_key(N, d);
+        //// d must be positive
+        //if (d.compareTo(new BigInteger("0")) < 0)
+        //    d = d.add(phiN);
 
+        BigInteger d = RSA_private(phiN, e);
+
+        rsa_private_key private_key = new rsa_private_key(N, d);
         return new rsa_key_pair(public_key, private_key);
     }
 
@@ -160,12 +197,12 @@ public class entry
 
     public static BigInteger encode_msg(String msg)
     {
-        var base = new BigInteger("26");
-        var x = new BigInteger("0");
+        BigInteger base = new BigInteger("26");
+        BigInteger x = new BigInteger("0");
 
         for (int i = 0; i < msg.length(); ++i)
         {
-            var tmp = BigInteger.valueOf((char_to_value(msg.charAt(i))));
+            BigInteger tmp = BigInteger.valueOf((char_to_value(msg.charAt(i))));
             x = x.add(tmp.multiply(base.pow(i)));
         }
         return x;
@@ -173,7 +210,7 @@ public class entry
 
     public static String decode_msg(BigInteger encoded_msg)
     { 
-        var base = new BigInteger("26");
+        BigInteger base = new BigInteger("26");
         String msg = "";
 
         while (encoded_msg.compareTo(BigInteger.valueOf(0)) != 0)
@@ -189,27 +226,55 @@ public class entry
     // encodes and encryptes the message
     public static BigInteger rsa_encrypt(String msg, rsa_public_key pubk)
     {
-        var encoded = encode_msg(msg);
+        BigInteger encoded = encode_msg(msg);
         return encoded.modPow(pubk.e, pubk.N);
     }
 
     // decryptes and decodes the message
     public static String rsa_decrypt(BigInteger encrypted_msg, rsa_private_key privk)
     {
-        var decrypted = encrypted_msg.modPow(privk.d, privk.N);
+        BigInteger decrypted = encrypted_msg.modPow(privk.d, privk.N);
         return decode_msg(decrypted);
+    }
+
+    public static BigInteger square_and_multiply(BigInteger a, BigInteger b, BigInteger n)
+    {
+        BigInteger z = BigInteger.valueOf(0); 
+        if (b.testBit(0))
+            z = a.mod(n);
+        else
+            z = BigInteger.valueOf(1);
+
+        for (int i=1; i<b.bitLength(); ++i)
+        {
+            a = a.pow(2);
+            a = a.mod(n);
+            if (b.testBit(i))
+                z = z.multiply(a).mod(n);
+        }
+        return z;
     }
 
     public static void main(String[] args)
     {
-        var p = new BigInteger("965268402460900566905893130175198567875954976077533149965752111135677928778242951622760389058664606193897418542887204205009771546473136573124830353795329419814825468890452820118475510818402791378532378442391019678868094428194560815118667706911321381012595467778804552607276641300887525411299385909007");
+        Random r = new Random();
+        BigInteger p = BigInteger.probablePrime(256, r);
+        BigInteger q = BigInteger.probablePrime(256, r);
 
-        var q = new BigInteger("494567867668539279481333488488171479757484570034435522717559423867894654782220744889038318544375933551949247273577934686988828586434497832648155459208971522506557641126436353648903769431170463197864641295604351489562632084876964472291402775145816600234597989530978896565239246792677547723194942661889");
+        rsa_key_pair kp = construct_rsa_keypair(p,q);
 
-        var keypair = construct_rsa_keypair(p,q);
 
-        var encrypted = new BigInteger("33924201066280476046214724300018026113030797390533451217471465178938195448614240023403361319279200116541015428310732515693821362871853665256838067102914524287136546661448649117887474760902176");
-        
-        System.out.print(rsa_decrypt(encrypted,keypair.priv));
+        String msg = new String("DASISTEINEGEHEIMNACHRICHT");
+
+        BigInteger encrypted = rsa_encrypt(msg, kp.pub);
+        System.out.println(encrypted);
+
+        String decrypted = rsa_decrypt(encrypted, kp.priv);
+        System.out.println(decrypted);
+
+
+        //BigInteger p = new BigInteger("965268402460900566905893130175198567875954976077533149965752111135677928778242951622760389058664606193897418542887204205009771546473136573124830353795329419814825468890452820118475510818402791378532378442391019678868094428194560815118667706911321381012595467778804552607276641300887525411299385909007");
+        //BigInteger q = new BigInteger("494567867668539279481333488488171479757484570034435522717559423867894654782220744889038318544375933551949247273577934686988828586434497832648155459208971522506557641126436353648903769431170463197864641295604351489562632084876964472291402775145816600234597989530978896565239246792677547723194942661889");
+        //rsa_key_pair kp = construct_rsa_keypair(p,q);
     }
 }
